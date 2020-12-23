@@ -1,8 +1,8 @@
 #!/usr/bin/python
 # -*- encoding: utf-8 -*-
 
-from shoppingCart.tax import calculate
-from shoppingCart.utils import id_from_object, get_dict_of_ids, get_list_of_ids
+from utils.tax import calculate
+from utils.common import id_from_object, get_dict_of_ids, get_list_of_ids
 
 __all__ = ['Cart']
 
