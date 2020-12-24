@@ -1,5 +1,9 @@
 #!/usr/bin/python
 # -*- encoding: utf-8 -*-
+import random
+import string
+import uuid
+
 
 class Option(object):
     """
@@ -21,6 +25,7 @@ class Option(object):
     def add_value(self, *values):
         self.values.extend(values)
 
+
 class OptionValue(object):
     """
     OptionValue Object.
@@ -38,22 +43,24 @@ class OptionValue(object):
         self.code = code
         self.price = price
 
+
 class Product(object):
     """
     Product Object.
     """
-    
-    def __init__(self, id, name, code, price, options=[]):
+
+    def generate_code(self):
+        return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(6))
+
+    def __init__(self, name, price, code=None, id=None, options=[]):
         """
         :param id: Unique Id.
         :param name: Product Name.
         :param code: Prodcuct Code.
         :param price: Real Price of Product.
         """
-        self.id = id
-        self.code = code
+        self.id = id or uuid.uuid1()
+        self.code = code or self.generate_code()
         self.price = price
         self.name = name
         self.options = options
-
-# vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
