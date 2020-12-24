@@ -1,6 +1,11 @@
 #!/usr/bin/python
 # -*- encoding: utf-8 -*-
 
+
+def cmp(a, b):
+    return (a > b) - (a < b) 
+
+
 def id_from_object(object):
     """
     :return: Id of object or object itself.
@@ -9,6 +14,7 @@ def id_from_object(object):
         object = getattr(object, 'id', object)
 
     return object
+
 
 def get_dict_of_ids(object_dict):
     """
@@ -25,6 +31,7 @@ def get_dict_of_ids(object_dict):
             values.append(id_from_object(value))
             
     return dict(zip(keys, values))
+
 
 def get_list_of_ids(object_list):
     """
