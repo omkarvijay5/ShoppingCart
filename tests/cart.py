@@ -508,7 +508,8 @@ class CartTestCase(unittest.TestCase):
         #Sub Total
         self.assertEqual('%s %s'%(self.cart.sub_total(), self.cart.currency_symbol), '40.63 €')
         #Added discount
-        self.cart.add_discount(self.discount_coupon1.discount, self.discount_coupon1.type)
+        cart_items = self.cart.get_items()
+        cart_items[0].add_discount(self.discount_coupon1.discount, self.discount_coupon1.type)
         #Total Discount
         self.assertEqual('%s %s'%(self.cart.total_discount(), self.cart.currency_symbol), '12.19 €')
         
@@ -544,11 +545,11 @@ class CartTestCase(unittest.TestCase):
         #Set `tax_type` with 'excluded'
         self.cart.tax_type = 'excluded'
         #Total Tax
-        self.assertEqual('%s %s'%(self.cart.total_tax(), self.cart.currency_symbol), '7.96 €')
+        self.assertEqual('%s %s'%(self.cart.total_tax(), self.cart.currency_symbol), '5.57 €')
         #Set `tax_type` with 'included'
         self.cart.tax_type = 'included'
         #Total Tax
-        self.assertEqual('%s %s'%(self.cart.total_tax(), self.cart.currency_symbol), '6.66 €')
+        self.assertEqual('%s %s'%(self.cart.total_tax(), self.cart.currency_symbol), '4.66 €')
         
     def test_total_with_multi_currency(self):
         self.cart.add_item(product=1, price=10.00, quantity=1)
