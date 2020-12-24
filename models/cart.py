@@ -2,9 +2,10 @@
 # -*- encoding: utf-8 -*-
 
 from utils.tax import calculate
-from utils.common import id_from_object, get_dict_of_ids, get_list_of_ids
+from utils.common import id_from_object, get_dict_of_ids, get_list_of_ids, cmp
 
 __all__ = ['Cart']
+
 
 class Cart(object):
     """
@@ -34,7 +35,7 @@ class Cart(object):
         self.tax_type = 'excluded'
         self.__discounts = list()
 
-    def add_item(self, product, price=0.0, quantity=1, taxes=[], options={}):
+    def add_item(self, product, price=0.0, quantity=1, taxes=[], options={}, discounts=[]):
         """
         To add or update product, price, quantity, taxes and options in :class:`CartItem` object.
         
@@ -65,7 +66,7 @@ class Cart(object):
             elif not isinstance(price, (int, float)):
                 raise TypeError('price value must be integer or float type', 'price')
                 
-            cart_item = CartItem(self, product, price, quantity, taxes, options)
+            cart_item = CartItem(self, product, price, quantity, taxes, options, discounts)
             self.__items.append(cart_item)
 
     def update_item(self, product, quantity, option_values=[]):
@@ -241,7 +242,6 @@ class Cart(object):
         :return: Total discount amount.
         """
         total_discount = 0.0
-        
         for cart_item in self.get_items():
             total_discount += cart_item.discount_amount()
         return round(total_discount, self.price_accuracy)
@@ -260,7 +260,6 @@ class Cart(object):
         :return: Total tax amount.
         """
         total_tax = 0.0
-        
         if self.tax_type == 'included':
             total = self.sub_total() - self.total_discount()
         else:
@@ -274,7 +273,6 @@ class Cart(object):
         """
         :return: Total amount(`tax excluded` or `tax included`) by adding total untaxed amount, total tax and shipping charge.
         """
-
         return round(self.total_untaxed_amount() + self.total_tax() + self.shipping_charge, self.price_accuracy)
 
     def count(self):
@@ -339,12 +337,13 @@ class Cart(object):
     
     shipping_charge = property(_get__shipping_charge, _set__shipping_charge)    
 
+
 class CartItem(object):
     """
     Collection of :class:`Product` and it's quantity, taxes and options.
     """
     
-    def __init__(self, cart, product, price, quantity, taxes=[], options={}):
+    def __init__(self, cart, product, price, quantity, taxes=[], options={}, discounts=[]):
         """
         :param cart: Instance of :class:`Cart`.
         :param product: Unique id or name of :class:`Product` object or instance of :class:`Product`.
@@ -362,6 +361,7 @@ class CartItem(object):
         self.__taxes = taxes
         self.__options = options
         self.__cart = cart
+        self.__discounts = discounts
                 
     def update_quantity(self, quantity):
         """
@@ -399,15 +399,60 @@ class CartItem(object):
                    if value.has_key('price'):
                         price += value['price']
         return round(price * self.quantity, self.__cart.price_accuracy)
-        
+
+    def add_discount(self, amount, type='percentage'):
+        """
+        To apply discount.
+
+        :param amount: Discount amount.
+        :param type: Discount type like 'percentage' or 'amount'(default amount).
+        """
+        self.__discounts.append({'amount': amount, 'type': type})
+
+    def remove_discounts(self):
+        """
+        To remove all applied discounts.
+        """
+        self.__discounts = list()
+
+    def get_discounts(self):
+        """
+        :return: List of applied discounts.
+        """
+        return self.__discounts
+
+    @property
+    def is_discount_applied(self):
+        """
+        :return: True if discount is applied else False.
+        """
+        if self.__discounts:
+            return True
+        return False
+
     def discount_amount(self):
         """
         :return: Discount amount.
         """
         discount_amount = 0.0
         sub_total = self.sub_total()
-        
-        for discount in self.__cart.get_discounts():
+
+        for discount in self.get_discounts():
+            if discount['type'] == 'percentage':
+                discount_amount += round(sub_total * (float(discount['amount']) / 100), self.__cart.price_accuracy)
+            elif discount['type'] == 'amount':
+                discount_amount += round(float(discount['amount']) * self.__cart.currency_rate,
+                                         self.__cart.price_accuracy)
+
+        return round(discount_amount, self.__cart.price_accuracy)
+
+    def discount_amount(self):
+        """
+        :return: Discount amount.
+        """
+        discount_amount = 0.0
+        sub_total = self.sub_total()
+        for discount in self.get_discounts():
             if discount['type'] == 'percentage':
                 discount_amount += round(sub_total * (float(discount['amount'])/100), self.__cart.price_accuracy)
             elif discount['type'] == 'amount':
@@ -415,11 +460,14 @@ class CartItem(object):
                 
         return round(discount_amount, self.__cart.price_accuracy)
 
-    def untaxed_amount(self):
+    def untaxed_amount(self, with_discount=False):
         """
-        :return: Untaxed amount(after deducating discount amount).
+        :return: Untaxed amount(with/without deducating discount amount).
         """
-        total = self.sub_total() - self.discount_amount()
+        if with_discount:
+            total = self.sub_total() - self.discount_amount()
+        else:
+            total = self.sub_total()
 
         if self.__cart.tax_type == 'included':
             total -= self.tax_amount()
@@ -431,7 +479,6 @@ class CartItem(object):
         :return: Tax amount.
         """
         tax_amount = 0.0
-        
         if self.__cart.tax_type == 'included':
             total = self.sub_total() - self.discount_amount()
         else:
@@ -478,5 +525,5 @@ class CartItem(object):
         self.__price = value
 
     price = property(_get_price, _set_price)
-    
+
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
